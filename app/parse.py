@@ -8,7 +8,7 @@ import httpx
 from bs4 import BeautifulSoup
 from tqdm.asyncio import tqdm_asyncio
 
-URL = "http://quotes.toscrape.com/"
+URL = "https://quotes.toscrape.com/"
 
 
 @dataclass
@@ -103,21 +103,21 @@ async def fetch_author_bio(
 
 
 async def get_all_quotes_and_authors(
-) -> tuple[list[Quote], dict[str, AuthorBio]]:
+) -> tuple[list[Quote], dict[str, AuthorBio]]:  # noqa: E501
     all_quotes = []
-    author_bios = {}
+    author_urls = {}
     async with httpx.AsyncClient() as client:
         async for page in page_generator(client, URL):
             for quote, author_url in parse_page_with_author_links(page):
                 all_quotes.append(quote)
-                if author_url and quote.author not in author_bios:
-                    author_bios[quote.author] = author_url
+                if author_url and quote.author not in author_urls:
+                    author_urls[quote.author] = author_url
         bios = await tqdm_asyncio.gather(
-            *(fetch_author_bio(client, url) for url in author_bios.values()),
+            *(fetch_author_bio(client, url) for url in author_urls.values()),
             desc="Fetching author bios",
         )
         author_bios = {
-            author: bio for author, bio in zip(author_bios.keys(), bios) if bio
+            author: bio for author, bio in zip(author_urls.keys(), bios) if bio
         }
     return all_quotes, author_bios
 
